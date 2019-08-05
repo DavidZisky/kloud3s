@@ -8,10 +8,13 @@ user=dave
 load_kube_config=true
 
 #-----
+# Below ZONE and PROJECT variables are just in case You don't have those defaults set up in gcloud (you should). 
+ZONE="europe-west4-a"
+PROJECT="default"
 DEFAULT_PROJECT=`gcloud config list --format 'value(core.project)'`
 DEFAULT_ZONE=`gcloud config list --format 'value(compute.zone)'`
-ZONE="${ZONE:-$DEFAULT_ZONE}"
-PROJECT="${PROJECT:-$DEFAULT_PROJECT}"
+ZONE="${DEFAULT_ZONE:-$ZONE}"
+PROJECT="${DEFAULT_PROJECT:-$PROJECT}"
 CLUSTER_NAME="${1:-k3s}"
 
 if [ "$2" = "delete" ]
