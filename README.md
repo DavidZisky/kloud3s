@@ -12,7 +12,11 @@ It requires gcloud to be installed and configured and prefferably have default z
 
 `gcloud config set core/project my-project`
 
-another thing is to have ssh key loaded as metadata for project - in that case it will be added to any VM deployed in that project by default. If You for some reason don't want to do that You can add commented line in the script to gcloud command:
+another thing is to have ssh key loaded as metadata for project - in that case it will be added to any VM deployed in that project by default:
+
+[How to add global ssh key](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide)
+
+If You for some reason don't want to do that You can add commented line in the script to gcloud command:
 
 > #--metadata=ssh-keys="[USER_AS_IN_SSH_KEY]:[YOUR_SSH_KEY_HERE]" \
 
