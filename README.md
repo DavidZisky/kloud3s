@@ -9,6 +9,7 @@ Under 60 seconds Kubernetes deployer
 It requires gcloud to be installed and configured and prefferably have default zone and project set up. If You don't have them set up you can do it by executing:
 
 `gcloud config set compute/region europe-west4-a`
+
 `gcloud config set core/project my-project`
 
 another thing is to have ssh key loaded as metadata for project - in that case it will be added to any VM deployed in that project by default. If You for some reason don't want to do that You can add commented line in the script to gcloud command:
