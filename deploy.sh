@@ -8,7 +8,7 @@ user=dave
 load_kube_config=true
 
 #-----
-# Below ZONE and PROJECT variables are just in case You don't have those defaults set up in gcloud (you should). 
+# Below ZONE and PROJECT variables are just in case You don't have those defaults set up in gcloud (you should).
 ZONE="europe-west4-a"
 PROJECT="default"
 DEFAULT_PROJECT=`gcloud config list --format 'value(core.project)'`
@@ -35,7 +35,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-master \
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1904-disco-v2019091 \
+--image=ubuntu-minimal-1904-disco-v20190911 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -46,7 +46,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-worker1 $CLUSTE
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1904-disco-v2019091 \
+--image=ubuntu-minimal-1904-disco-v20190911 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -55,6 +55,7 @@ sleep 7
 master_public=`gcloud compute instances describe --zone=$ZONE  --project=$PROJECT $CLUSTER_NAME-master --format='get(networkInterfaces[0].accessConfigs[0].natIP)'`
 master_private=`gcloud compute instances describe --zone=$ZONE  --project=$PROJECT $CLUSTER_NAME-master --format='get(networkInterfaces[0].networkIP)'`
 echo "----- Master node public IP: $master_public -----"
+ssh-keygen -R $master_public > /dev/null
 
 
 until ssh -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" $user@$master_public 'hostname' > /dev/null
@@ -85,6 +86,7 @@ echo "----- Deploying worker nodes... -----"
 for worker in $CLUSTER_NAME-worker1 $CLUSTER_NAME-worker2 $CLUSTER_NAME-worker3
 do
   host=`gcloud compute instances describe --project=$PROJECT --zone=$ZONE $worker --format='get(networkInterfaces[0].accessConfigs[0].natIP)'`
+  ssh-keygen -R $host > /dev/null
   ssh -q -o "StrictHostKeyChecking=no" $user@$host 'sudo modprobe ip_vs'
   ssh -q -o "StrictHostKeyChecking=no" $user@$host "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} K3S_URL=https://${master_private}:6443 sh -" &>/dev/null  &
 done
