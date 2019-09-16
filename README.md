@@ -8,6 +8,8 @@ Under 60 seconds Kubernetes deployer
 
 ## Bash script for deploying 4 node (1 master + 3 workers) Kuberentes cluster (k3s) on Google Cloud. It creates VMs, then downloads and installs k3s on all nodes (making sure that workers join the master), and downloads kubectl config (and optionally directly loads it in your system).
 
+![Proof](proof.png)
+
 It requires gcloud to be installed and configured and prefferably have default zone and project set up. If You don't have them set up you can do it by executing:
 
 `gcloud config set compute/region europe-west4-a`
