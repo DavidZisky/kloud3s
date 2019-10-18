@@ -2,7 +2,9 @@
 
 START_TIME=`date "+%s"`
 
+# Paste your DO token below
 do_api_token=""
+# Set below to false if you don't want your existing kube config to be overwriten. Config for k3s cluster will be still downloaded so you can use it manually or append
 load_kube_config="true"
 
 echo "1. Create Master VM"
@@ -21,10 +23,11 @@ curl -s -X POST \
 
 get_master_ip () {
   master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
+  master_ip_priv=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
 }
 
 sleep 15
-until [ -z "$master_ip" ]
+until [[ $master_ip ]]
 do
   echo "3a. Waiting for the IP Address get assigned to Master VM"
   get_master_ip > /dev/null
@@ -36,14 +39,16 @@ master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization:
 master_ip_priv=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
 echo "3. Master node IP assigned: $master_ip"
 
+sleep 10
 until ssh -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" root@$master_ip 'hostname' > /dev/null
 do
   echo "4. Waiting for the master node to be up and running..."
   sleep 3
 done
 
-ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LANG=en_US.utf-8" > /etc/environment' &>/dev/null
-ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' &>/dev/null
+# Uncomment below if you want to use CentOS based Droplets
+#ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LANG=en_US.utf-8" > /etc/environment' > /dev/null 2>&1
+#ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' > /dev/null 2>&1
 
 echo "5. Install k3s on Master node"
 ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip "curl -sfL https://get.k3s.io | sh -" > /dev/null
@@ -58,8 +63,8 @@ echo $workers_ip
 echo "8. Install k3s on workers and join the cluster"
 for worker in $workers_ip
 do
-  echo $worker
-  ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} K3S_URL=https://${master_ip_priv}:6443 sh -" &>/dev/null  &
+  echo "8a. Deploying worker: $worker"
+  ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} K3S_URL=https://${master_ip_priv}:6443 sh -" > /dev/null 2>&1
 done
 
 echo "9. Downloading kubectl config..."
