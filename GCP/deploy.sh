@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Timing doesn't work on zsh currently (works on bash)
-#START_TIME=`date "+%s"`
+START_TIME=`date "+%s"`
+
 # Put same user as in ssh key here
 user=dave
 # If set to true, your existing kubectl config will be OVERWRITTEN, if set to false, script will only download kubectl config for you
@@ -112,5 +113,5 @@ else
   ssh -q -o "StrictHostKeyChecking=no" $user@$master_public "sudo kubectl get nodes"
 fi
 
-#END_TIME=`date "+%s"`
-#echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
+END_TIME=`date "+%s"`
+echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
