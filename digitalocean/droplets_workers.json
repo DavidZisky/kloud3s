@@ -2,7 +2,7 @@
   "names": ["k3s-worker1","k3s-worker2","k3s-worker3"],
   "region": "ams3",
   "size": "s-2vcpu-2gb",
-  "image": 50901536,
+  "image": "ubuntu-18-04-x64",
   "ssh_keys": [""],
   "backups": false,
   "ipv6": false,
