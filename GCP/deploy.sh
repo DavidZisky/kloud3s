@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -e
 
 # Timing doesn't work on zsh currently (works on bash)
 START_TIME=`date "+%s"`
@@ -37,7 +37,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-master \
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1904-disco-v20190911 \
+--image=ubuntu-minimal-1904-disco-v20191113 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -48,7 +48,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-worker1 $CLUSTE
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1904-disco-v20190911 \
+--image=ubuntu-minimal-1904-disco-v20191113 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -77,7 +77,7 @@ echo "----- Downloading kubectl config... -----"
 ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public "sudo cp /etc/rancher/k3s/k3s.yaml /home/$user && sudo chown $user:$user /home/$user/k3s.yaml"
 scp_command="$user@$master_public:/home/$user/k3s.yaml ./k3s.yaml"
 scp $scp_command >/dev/null
-sed -i '' "s/localhost/$master_public/g" ./k3s.yaml
+sed -i '' "s/127.0.0.1/$master_public/g" ./k3s.yaml
 if [ "$load_kube_config" = "true" ]
 then
   echo "----- Loading kubectl config... -----"
