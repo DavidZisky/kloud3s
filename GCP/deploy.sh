@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 # Timing doesn't work on zsh currently (works on bash)
 START_TIME=`date "+%s"`
