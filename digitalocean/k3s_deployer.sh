@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 START_TIME=`date "+%s"`
 
