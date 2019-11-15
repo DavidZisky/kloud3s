@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -e
 
 START_TIME=`date "+%s"`
 
@@ -13,14 +13,14 @@ curl -s -X POST \
   https://api.digitalocean.com/v2/droplets \
   -H "Authorization: Bearer $do_api_token" \
   -H "Content-Type: application/json" \
-  --data @droplet_master.json > /dev/null
+  --data @droplet_master.json > k3s_master.json
 
 echo "2. Create Workers VMs"
 curl -s -X POST \
   https://api.digitalocean.com/v2/droplets \
   -H "Authorization: Bearer $do_api_token" \
   -H "Content-Type: application/json" \
-  --data @droplets_workers.json > /dev/null
+  --data @droplets_workers.json > k3s_workers.json
 
 get_master_ip () {
   master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
@@ -52,10 +52,10 @@ done
 #ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' > /dev/null 2>&1
 
 echo "5. Install k3s on Master node"
-ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip "curl -sfL https://get.k3s.io | sh -" > /dev/null
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -" > /dev/null
 
 echo "6. Get token for joining nodes"
-token=`ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'cat /var/lib/rancher/k3s/server/node-token'`
+token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
 
 echo "7. Get Worker Nodes IP Addresses"
 workers_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-workers" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
