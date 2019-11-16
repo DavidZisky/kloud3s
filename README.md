@@ -1,33 +1,80 @@
-# 60sk3s
-Under 60 seconds Kubernetes deployer
-
-
----
-
-## WORK IN PROGRESS... ADDED DIGITALOCEAN SO THIS README NEEDS TO BE UPDATED ASAP
-
-## Bash script for deploying 4 node (1 master + 3 workers) Kuberentes cluster (k3s) on Google Cloud. It creates VMs, then downloads and installs k3s on all nodes (making sure that workers join the master), and downloads kubectl config (and optionally directly loads it in your system).
-
 ![Proof](proof.png)
 
-It requires gcloud to be installed and configured and prefferably have default zone and project set up. If You don't have them set up you can do it by executing:
+# 60sk3s
 
-`gcloud config set compute/region europe-west4-a`
+Kubernetes in 60 seconds deployer. Simple bash script which spins up VMs in GCP/DigitalOcean, installs [k3s](https://k3s.io/) on them and downloads kube config.
 
-`gcloud config set core/project my-project`
+## Getting Started
 
-another thing is to have ssh key loaded as metadata for project - in that case it will be added to any VM deployed in that project by default:
+Please follow instructions below depending on the cloud provider you want to use. What script 
 
-[How to add global ssh key](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys#project-wide)
+## DigitalOcean
+### Prerequisites
 
-If You for some reason don't want to do that You can add commented line in the script to gcloud command:
+For DigitalOcean the only thing you need is token ([How to get token](https://www.digitalocean.com/docs/api/create-personal-access-token/)) and ssh key fingerprints. DO cli is not required. Simply paste your token on line 7:
 
-> #--metadata=ssh-keys="[USER_AS_IN_SSH_KEY]:[YOUR_SSH_KEY_HERE]" \
+```
+# Paste your DO token below
+do_api_token=""
+```
+And ssh key fingerprint (you can get it from "Security" menu on your digitalocean account) in both json files in digitalocean folder. Feel free to change droplet size, region, whatever according to your needs.
 
-Just keep in mind that You need to put user before your ssh key. So if You cat your id_rsa.pub at the end there will be something like john@host so then your metadata parameter should look like:
+```
+"ssh_keys": ["8b:f9:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"],
+```
 
-> --metadata=ssh-keys="john:ssh-rsa AAAAB3Nz[...]ktk/HB3 john@host" \
+### Usage
 
-You also need to put the same user into "user" variable at the begginig of the script
+If you wish to not overwrite your existing kube config (which script does by default), set load_kube_config to false (line 9 in k3s_deployer.sh)
 
-And last but not least - load_kube_config variable defines if You only want to download kubectl config onto your machine (false) or You want to download it and overwrite your existing kubectl config (true)
+Simply execute
+
+```
+./k3s_deployer.sh
+```
+
+On DigitalOcean process takes around 2 minutes
+
+## Google Cloud
+### Prerequisites
+
+In order to use 60sk3s with Google Cloud, you need to have gcloud cli installed ([How to do it](https://cloud.google.com/sdk/docs/quickstarts)) and prefferably default zone and project set. You can do that by executing:
+
+```
+gcloud config set compute/region europe-west4-a
+
+gcloud config set core/project my-project
+```
+It also assumes that you have your ssh key added to project metadata (therefore it's loaded into every VM you sping up in that project). If you don't then you can either do that ([How-to](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys)) or provide you ssh key in the script itself. For that you need to uncomment and fill lines 43 and 54 in GCP/deploy.sh
+
+Just keep in mind that You need to put it in format username:your_ssh_key. So if You do $cat your_id_rsa.pub at the end there will be something like john@host so then your metadata parameter should look like:
+
+```
+--metadata=ssh-keys="john:ssh-rsa AAAAB3Nz[...]ktk/HB3 john@host" \
+```
+
+### Usage
+
+Execute:
+
+```
+./deployer.sh [cluster_name]
+```
+
+To destroy the cluster:
+
+```
+./deployer.sh [cluster_name] delete
+```
+
+
+On GoogleCloud process takes less than 60 seconds
+
+
+## Contributing
+
+Simply raise a GitHub issue or send a PR.
+
+## License
+
+This project is licensed under the GPL-3.0 license - see the [LICENSE.md](LICENSE.md) file for details
