@@ -4,9 +4,10 @@
 
 Kubernetes in 60 seconds deployer. Simple bash script which spins up VMs in GCP/DigitalOcean, installs [k3s](https://k3s.io/) on them and downloads kube config.
 
-## Getting Started
 
-Please follow instructions below depending on the cloud provider you want to use. What script 
+# Getting Started
+
+Please follow instructions below depending on the cloud provider you want to use.
 
 ## DigitalOcean
 ### Prerequisites
