@@ -7,6 +7,7 @@ Script which creates 4 droplets on DigitalOcean, installs k3s cluster on them (1
 
 REQUIREMENTS:
 
+0. Make sure you have Helm3 and jq installed
 1. Add your email on line 10 in dns-issuer.yaml file
 2. Add SSH fingerprints (From "security" menu on digitalocean) in droplet_master and droplets_workers JSON files
 3. Add your DigitalOcean api token on line 7 in externaldns-values.yaml file
