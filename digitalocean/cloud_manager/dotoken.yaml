@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: digitalocean
+  namespace: cert-manager
+stringData:
+  access-token: [PUT_DO_TOKEN_HERE]
