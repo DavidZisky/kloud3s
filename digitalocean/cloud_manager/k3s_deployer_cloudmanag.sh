@@ -96,11 +96,11 @@ helm install external-dns stable/external-dns -f externaldns-values.yaml > exter
 
 echo "11. Installing Cert-Manager..."
 kubectl create ns cert-manager
+kubectl -n cert-manager create secret generic digitalocean --from-literal=access-token=$do_api_token
 kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml > cert-manager_crds_install.log
 helm repo add jetstack https://charts.jetstack.io > /dev/null
 helm install cert-manager --namespace cert-manager jetstack/cert-manager > cert-manager_install.log
 
-kubectl apply -f dotoken.yaml
 until (kubectl apply -f dns-issuer.yaml); do
     if [ $? -eq 0 ]; then
         echo "11a. DNS issuer created"

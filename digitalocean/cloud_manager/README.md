@@ -12,8 +12,7 @@ REQUIREMENTS:
 2. Add SSH fingerprints (From "security" menu on digitalocean) in droplet_master and droplets_workers JSON files
 3. Add your DigitalOcean api token on line 7 in externaldns-values.yaml file
 4. Add your DigitalOcean api token on line 7 in k3s_deployer_cloudmanag.sh file
-5. Add your DigitalOcean api token on line 7 in dotoken.yaml file
-6. OPTIONALLY: Put your domain on line 44 in example_deployment.yaml (if you want to use it)
+5. OPTIONALLY: Put your domain on line 44 in example_deployment.yaml (if you want to use it)
 
 
 USAGE:
