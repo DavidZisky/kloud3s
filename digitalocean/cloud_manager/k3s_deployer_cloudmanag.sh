@@ -15,14 +15,14 @@ curl -s -X POST \
   https://api.digitalocean.com/v2/droplets \
   -H "Authorization: Bearer $do_api_token" \
   -H "Content-Type: application/json" \
-  --data @droplet_master.json > k3s_master.json
+  --data @components/droplet_master.json > logs/k3s_master.json
 
 echo "2. Create Workers VMs"
 curl -s -X POST \
   https://api.digitalocean.com/v2/droplets \
   -H "Authorization: Bearer $do_api_token" \
   -H "Content-Type: application/json" \
-  --data @droplets_workers.json > k3s_workers.json
+  --data @components/droplets_workers.json > logs/k3s_workers.json
 
 get_master_ip () {
   master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
@@ -46,7 +46,7 @@ sleep 10
 until ssh -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" root@$master_ip 'hostname' > /dev/null
 do
   echo "4. Waiting for the master node to be up and running..."
-  sleep 3
+  sleep 5
 done
 
 # Uncomment below if you want to use CentOS based Droplets
@@ -54,14 +54,13 @@ done
 #ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' > /dev/null 2>&1
 
 echo "5. Install k3s on Master node"
-master_id=`cat k3s_master.json | jq -c '.droplets[].id'`
+master_id=`cat logs/k3s_master.json | jq -c '.droplets[].id'`
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
 
 echo "5. Install DO CCM"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "git clone -q https://github.com/digitalocean/digitalocean-cloud-controller-manager.git"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f digitalocean-cloud-controller-manager/releases/v0.1.21.yml"
-
 
 echo "6. Get token for joining nodes"
 token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
@@ -84,6 +83,7 @@ ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip "sudo cp /etc/rancher/k3
 scp_command="root@$master_ip:/root/k3s.yaml ./k3s.yaml"
 scp $scp_command >/dev/null
 sed -i.bak "s/127.0.0.1/$master_ip/g" ./k3s.yaml
+
 if [ "$load_kube_config" = "true" ]
 then
   echo "9a. Loading kubectl config..."
@@ -92,21 +92,23 @@ then
 fi
 
 echo "10. Installing ExternalDNS..."
-helm install external-dns stable/external-dns -f externaldns-values.yaml > externaldns_install.log
+helm install external-dns stable/external-dns -f components/externaldns-values.yaml > logs/externaldns_install.log
 
 echo "11. Installing Cert-Manager..."
 kubectl create ns cert-manager
 kubectl -n cert-manager create secret generic digitalocean --from-literal=access-token=$do_api_token
-kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml > cert-manager_crds_install.log
+kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml > logs/cert-manager_crds_install.log
 helm repo add jetstack https://charts.jetstack.io > /dev/null
-helm install cert-manager --namespace cert-manager jetstack/cert-manager > cert-manager_install.log
+helm install cert-manager --namespace cert-manager jetstack/cert-manager > logs/cert-manager_install.log
 
-until (kubectl apply -f dns-issuer.yaml); do
+sleep 10
+
+until (kubectl apply -f components/dns-issuer.yaml); do
     if [ $? -eq 0 ]; then
         echo "11a. DNS issuer created"
     else
         echo "11a. CertManager not ready yet... retrying"
-        sleep 10
+        sleep 5
     fi
 done
 
