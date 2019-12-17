@@ -4,7 +4,7 @@ rbac:
 provider: digitalocean
 
 digitalocean:
-  apiToken: [PUT_DO_TOKEN_HERE]
+  apiToken: PUT_DO_TOKEN_HERE
 
 interval: "1m"
 

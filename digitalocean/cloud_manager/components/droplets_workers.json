@@ -3,7 +3,7 @@
   "region": "ams3",
   "size": "s-2vcpu-2gb",
   "image": "ubuntu-18-04-x64",
-  "ssh_keys": ["[PUT_SSH_FINGERPRINT_HERE]"],
+  "ssh_keys": ["PUT_SSH_FINGERPRINT_HERE"],
   "backups": false,
   "ipv6": false,
   "user_data": null,

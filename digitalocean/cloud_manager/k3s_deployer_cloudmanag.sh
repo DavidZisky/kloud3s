@@ -3,8 +3,12 @@ set -e
 
 START_TIME=`date "+%s"`
 
-# Paste your DO token below
-do_api_token="[PUT_DO_TOKEN_HERE]"
+source components/init.sh
+
+if [[ -z "$do_api_token" ]]; then
+    echo "Must provide DigitalOcean API token in .env file" 1>&2
+    exit 1
+fi
 
 # Set below to false if you don't want your existing kube config to be overwriten. Config for k3s cluster will be still downloaded so you can use it manually or append
 # CURRENTLY MANDATORY - WILL UPDATE SCRIPT SOON
