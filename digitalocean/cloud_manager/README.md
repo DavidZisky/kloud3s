@@ -8,19 +8,16 @@ Script which creates 4 droplets on DigitalOcean, installs k3s cluster on them (1
 REQUIREMENTS:
 
 0. Make sure you have Helm3 and jq installed
-1. Add your email on line 10 in dns-issuer.yaml file
-2. Add SSH fingerprints (From "security" menu on digitalocean) in droplet_master and droplets_workers JSON files
-3. Add your DigitalOcean api token on line 7 in externaldns-values.yaml file
-4. Add your DigitalOcean api token on line 7 in k3s_deployer_cloudmanag.sh file
-5. OPTIONALLY: Put your domain on line 44 in example_deployment.yaml (if you want to use it)
+1. Add your email, DigitalOcean API Token and SSH Key fingerprint in .env file
+2. OPTIONALLY: Put your domain on line 44 in example_deployment.yaml (if you want to use it)
 
 
 USAGE:
 
 1. Make sure You fill requirements above
 2. Simply execute ./k3s_deployer_cloudmanag.sh
-3. After ~3 minutes your cluster is ready and kubectl config is loaded into your system - you can start using it :)
-4. If you deploy now any deployment with service and ingress, the DNS entries and SSL certificate are being created automatically and after few minutes your application is available under specified in ingress dns name and with https:// use example_deployment.yaml for reference how to create proper ingress
+3. After ~3-5 minutes your cluster is ready and kubectl config is loaded into your system - you can start using it :)
+4. If you deploy now a k8s deployment with service and ingress, the DNS entries and SSL certificate are being created automatically and after few minutes your application is available under specified in ingress dns name and with https:// use example_deployment.yaml for reference how to create proper ingress
 
 So workflow looks like this:
 
