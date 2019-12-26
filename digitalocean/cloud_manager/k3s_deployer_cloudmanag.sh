@@ -14,6 +14,9 @@ fi
 # CURRENTLY MANDATORY - WILL UPDATE SCRIPT SOON
 load_kube_config="true"
 
+#Don't install ExternalDNS and CertManager if set to true
+ccm_only="false"
+
 echo "1. Create Master VM"
 curl -s -X POST \
   https://api.digitalocean.com/v2/droplets \
@@ -59,7 +62,7 @@ done
 
 echo "5. Install k3s on Master node"
 master_id=`cat logs/k3s_master.json | jq -c '.droplets[].id'`
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
 
 echo "5. Install DO CCM"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token"
@@ -79,7 +82,7 @@ do
   echo "8a. Deploying worker: $worker"
   worker_id=`ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -s http://169.254.169.254/metadata/v1/id"`
   worker_public_ip=`ssh -q -o "StrictHostKeyChecking=no" root@$worker 'hostname -I | tr " " "\n" | head -1'`
-  ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -sfL https://get.k3s.io | K3S_TOKEN=${token} sh -s - agent --server https://${master_ip_priv}:6443 --node-external-ip ${worker_public_ip} --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null 2>&1
+  ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -sfL https://get.k3s.io | K3S_TOKEN=${token} sh -s - agent --server https://${master_ip_priv}:6443 --node-external-ip ${worker_public_ip} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null 2>&1
 done
 
 echo "9. Downloading kubectl config..."
@@ -93,6 +96,13 @@ then
   echo "9a. Loading kubectl config..."
   mv ~/.kube/config ~/.kube/config.bak
   mv ./k3s.yaml ~/.kube/config
+fi
+
+if [ "${ccm_only}" = "true" ]
+then
+  END_TIME=`date "+%s"`
+  echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
+  exit 0
 fi
 
 echo "10. Installing ExternalDNS..."
