@@ -106,16 +106,15 @@ then
 fi
 
 echo "10. Installing ExternalDNS..."
-helm install external-dns stable/external-dns -f components/externaldns-values.yaml > logs/externaldns_install.log
+helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null
+helm install external-dns bitnami/external-dns -f components/externaldns-values.yaml > logs/externaldns_install.log
 
 echo "11. Installing Cert-Manager..."
 kubectl create ns cert-manager
 kubectl -n cert-manager create secret generic digitalocean --from-literal=access-token=$do_api_token
-kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml > logs/cert-manager_crds_install.log
-helm repo add jetstack https://charts.jetstack.io > /dev/null
-helm install cert-manager --namespace cert-manager jetstack/cert-manager > logs/cert-manager_install.log
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.16.0/cert-manager.yaml > logs/cert-manager_crds_install.log
 
-sleep 10
+sleep 5
 
 until (kubectl apply -f components/dns-issuer.yaml); do
     if [ $? -eq 0 ]; then
