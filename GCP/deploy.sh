@@ -37,7 +37,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-master \
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1910-eoan-v20200521 \
+--image=ubuntu-minimal-2004-focal-v20200826 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -48,7 +48,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-worker1 $CLUSTE
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-1910-eoan-v20200521 \
+--image=ubuntu-minimal-2004-focal-v20200826 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -68,7 +68,7 @@ done
 
 echo "----- Nodes ready... deploying k3s on master... -----"
 ssh -q -o "StrictHostKeyChecking=no" $user@$master_public 'sudo modprobe ip_vs'
-ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public "curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC=\"server --tls-san=$master_public\" sh -" >/dev/null
+ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public "curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC=\"server --tls-san=$master_public --node-external-ip=$master_public\" sh -" >/dev/null
 
 token=`ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public 'sudo cat /var/lib/rancher/k3s/server/node-token'`
 
@@ -90,7 +90,7 @@ do
   host=`gcloud compute instances describe --project=$PROJECT --zone=$ZONE $worker --format='get(networkInterfaces[0].accessConfigs[0].natIP)'`
   ssh-keygen -R $host > /dev/null
   ssh -q -o "StrictHostKeyChecking=no" $user@$host 'sudo modprobe ip_vs'
-  ssh -q -o "StrictHostKeyChecking=no" $user@$host "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} K3S_URL=https://${master_private}:6443 sh -" &>/dev/null  &
+  ssh -q -o "StrictHostKeyChecking=no" $user@$host "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} sh -s - agent --server https://${master_private}:6443 --node-external-ip ${host}" &>/dev/null  &
 done
 
 echo "----- Deployment finished... waiting for all the nodes to become k3s ready... -----"
