@@ -37,7 +37,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-master \
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-2004-focal-v20200907 \
+--image=ubuntu-minimal-2004-focal-v20201028 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -48,7 +48,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-worker1 $CLUSTE
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-2004-focal-v20200907 \
+--image=ubuntu-minimal-2004-focal-v20201028 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
