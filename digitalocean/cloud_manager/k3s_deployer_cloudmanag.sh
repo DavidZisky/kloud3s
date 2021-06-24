@@ -67,7 +67,7 @@ ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get
 echo "5. Install DO CCM"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "git clone -q https://github.com/digitalocean/digitalocean-cloud-controller-manager.git"
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f digitalocean-cloud-controller-manager/releases/v0.1.21.yml"
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f digitalocean-cloud-controller-manager/releases/v0.1.32.yml"
 
 echo "6. Get token for joining nodes"
 token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
