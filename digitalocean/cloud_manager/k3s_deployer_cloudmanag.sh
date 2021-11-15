@@ -65,9 +65,8 @@ master_id=`cat logs/k3s_master.json | jq -c '.droplets[].id'`
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
 
 echo "5. Install DO CCM"
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token"
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "git clone -q https://github.com/digitalocean/digitalocean-cloud-controller-manager.git"
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f digitalocean-cloud-controller-manager/releases/v0.1.32.yml"
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token" > /dev/null
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/v0.1.32.yml" > /dev/null
 
 echo "6. Get token for joining nodes"
 token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
