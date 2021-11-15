@@ -118,7 +118,7 @@ helm -n kube-system install cert-manager bitnami/cert-manager --set installCRDs=
 
 sleep 5
 
-until (kubectl apply -f components/dns-issuer.yaml); do
+until (kubectl -n kube-system apply -f components/dns-issuer.yaml); do
     if [ $? -eq 0 ]; then
         echo "11a. DNS issuer created"
     else
