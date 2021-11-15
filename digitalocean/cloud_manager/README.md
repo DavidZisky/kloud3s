@@ -1,4 +1,4 @@
-# k3sDOCCM
+# k3s on DigitalOcean with their CloudControllerManager
 K3S + DO Cloud Manager
 
 PROPER README COMING SOON...
