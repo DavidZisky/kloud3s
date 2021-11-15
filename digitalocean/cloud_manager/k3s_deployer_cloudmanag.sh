@@ -106,7 +106,11 @@ fi
 
 echo "10. Installing ExternalDNS..."
 helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null
-helm install external-dns bitnami/external-dns -f components/externaldns-values.yaml > logs/externaldns_install.log
+helm -n kube-system install external-dns \
+  --set provider=digitalocean \
+  --set digitalocean.apiToken=$do_api_token \
+  --set policy=sync \
+bitnami/external-dns > logs/externaldns_install.log
 
 echo "11. Installing Cert-Manager..."
 kubectl create ns cert-manager
