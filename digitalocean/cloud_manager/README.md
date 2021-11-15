@@ -9,7 +9,7 @@ REQUIREMENTS:
 
 0. Make sure you have Helm3 and jq installed
 1. Add your email, DigitalOcean API Token and SSH Key fingerprint in .env file
-2. OPTIONALLY: Put your domain on line 44 in example_deployment.yaml (if you want to use it)
+2. OPTIONALLY: Put your domain on lines 46 and 49 in example_deployment.yaml (if you want to use it)
 
 
 USAGE:
