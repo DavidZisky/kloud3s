@@ -113,9 +113,8 @@ helm -n kube-system install external-dns \
 bitnami/external-dns > logs/externaldns_install.log
 
 echo "11. Installing Cert-Manager..."
-kubectl create ns cert-manager
-kubectl -n cert-manager create secret generic digitalocean --from-literal=access-token=$do_api_token
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.16.0/cert-manager.yaml > logs/cert-manager_crds_install.log
+kubectl -n kube-system create secret generic digitalocean-dns --from-literal=access-token=$do_api_token
+helm -n kube-system install cert-manager bitnami/cert-manager --set installCRDs=true > logs/cert-manager_crds_install.log
 
 sleep 5
 
