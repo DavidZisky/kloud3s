@@ -16,6 +16,7 @@ load_kube_config="true"
 
 #Don't install ExternalDNS and CertManager if set to true
 ccm_only="false"
+ccm_version="v0.1.36"
 
 echo "1. Create Master VM"
 curl -s -X POST \
@@ -66,10 +67,11 @@ ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get
 
 echo "5. Install DO CCM"
 ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token" > /dev/null
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/v0.1.32.yml" > /dev/null
+ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/$ccm_version.yml" > /dev/null
 
 echo "6. Get token for joining nodes"
 token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
+echo $token > token.txt
 
 echo "7. Get Worker Nodes IP Addresses"
 workers_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-workers" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
@@ -81,13 +83,13 @@ do
   echo "8a. Deploying worker: $worker"
   worker_id=`ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -s http://169.254.169.254/metadata/v1/id"`
   worker_public_ip=`ssh -q -o "StrictHostKeyChecking=no" root@$worker 'hostname -I | tr " " "\n" | head -1'`
-  ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -sfL https://get.k3s.io | K3S_TOKEN=${token} sh -s - agent --server https://${master_ip_priv}:6443 --node-external-ip ${worker_public_ip} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null 2>&1
+  ssh -q -o "StrictHostKeyChecking=no" root@$worker "echo $token > /tmp/token.txt && curl -sfL https://get.k3s.io | sh -s - agent --token-file /tmp/token.txt --server https://${master_ip_priv}:6443 --node-external-ip ${worker_public_ip} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null
 done
 
 echo "9. Downloading kubectl config..."
 ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip "sudo cp /etc/rancher/k3s/k3s.yaml /root" > /dev/null
 scp_command="root@$master_ip:/root/k3s.yaml ./k3s.yaml"
-scp $scp_command >/dev/null
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $scp_command >/dev/null
 sed -i.bak "s/127.0.0.1/$master_ip/g" ./k3s.yaml
 
 if [ "$load_kube_config" = "true" ]
@@ -126,8 +128,6 @@ until (kubectl -n kube-system apply -f components/dns-issuer.yaml); do
         sleep 5
     fi
 done
-
-
 
 END_TIME=`date "+%s"`
 echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
