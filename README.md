@@ -1,4 +1,4 @@
-![Proof](proof.png)
+![Deployment](kloud3s.jpg)
 
 # 60sk3s
 
