@@ -4,6 +4,8 @@
 
 K3S Cluster Deployer. Simple bash script which spins up VMs in GCP/DigitalOcean, installs [k3s](https://k3s.io/) on them and downloads kubeconfig.
 
+Perfect for POCs and other testing whenever you need a real (instead of minikube of kind) K8s cluster quickly. 
+
 
 # Getting Started
 
