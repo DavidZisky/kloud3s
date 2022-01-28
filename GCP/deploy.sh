@@ -11,7 +11,7 @@ load_kube_config=true
 
 #-----
 # Below ZONE and PROJECT variables are just in case You don't have those defaults set up in gcloud (you should).
-ZONE="europe-west4-a"
+ZONE="europe-west1-b"
 PROJECT="default"
 DEFAULT_PROJECT=`gcloud config list --format 'value(core.project)'`
 DEFAULT_ZONE=`gcloud config list --format 'value(compute.zone)'`
@@ -37,7 +37,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-master \
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-2004-focal-v20201028 \
+--image=ubuntu-minimal-2004-focal-v20220118 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -48,7 +48,7 @@ gcloud compute --project=$PROJECT instances create $CLUSTER_NAME-worker1 $CLUSTE
 --subnet=default \
 --network-tier=PREMIUM \
 --maintenance-policy=MIGRATE \
---image=ubuntu-minimal-2004-focal-v20201028 \
+--image=ubuntu-minimal-2004-focal-v20220118 \
 --image-project=ubuntu-os-cloud \
 --no-user-output-enabled >/dev/null &
 
@@ -57,17 +57,14 @@ sleep 7
 master_public=`gcloud compute instances describe --zone=$ZONE  --project=$PROJECT $CLUSTER_NAME-master --format='get(networkInterfaces[0].accessConfigs[0].natIP)'`
 master_private=`gcloud compute instances describe --zone=$ZONE  --project=$PROJECT $CLUSTER_NAME-master --format='get(networkInterfaces[0].networkIP)'`
 echo "----- Master node public IP: $master_public -----"
-ssh-keygen -R $master_public > /dev/null
 
-
+echo "----- Waiting for the master node... -----"
 until ssh -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" $user@$master_public 'hostname' > /dev/null
 do
-  echo "----- Waiting for the nodes... -----"
-  sleep 3
+  sleep 5
 done
 
 echo "----- Nodes ready... deploying k3s on master... -----"
-ssh -q -o "StrictHostKeyChecking=no" $user@$master_public 'sudo modprobe ip_vs'
 ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public "curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC=\"server --tls-san=$master_public --node-external-ip=$master_public\" sh -" >/dev/null
 
 token=`ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public 'sudo cat /var/lib/rancher/k3s/server/node-token'`
@@ -76,7 +73,7 @@ echo "----- K3s master deployed... -----"
 echo "----- Downloading kubectl config... -----"
 ssh -q -o "StrictHostKeyChecking=no" -t $user@$master_public "sudo cp /etc/rancher/k3s/k3s.yaml /home/$user && sudo chown $user:$user /home/$user/k3s.yaml"
 scp_command="$user@$master_public:/home/$user/k3s.yaml ./k3s.yaml"
-scp $scp_command >/dev/null
+scp -o "StrictHostKeyChecking=no" $scp_command >/dev/null
 sed -i.bak "s/127.0.0.1/$master_public/g" ./k3s.yaml
 if [ "$load_kube_config" = "true" ]
 then
@@ -88,9 +85,8 @@ echo "----- Deploying worker nodes... -----"
 for worker in $CLUSTER_NAME-worker1 $CLUSTER_NAME-worker2 $CLUSTER_NAME-worker3
 do
   host=`gcloud compute instances describe --project=$PROJECT --zone=$ZONE $worker --format='get(networkInterfaces[0].accessConfigs[0].natIP)'`
-  ssh-keygen -R $host > /dev/null
-  ssh -q -o "StrictHostKeyChecking=no" $user@$host 'sudo modprobe ip_vs'
-  ssh -q -o "StrictHostKeyChecking=no" $user@$host "curl -sfL https://get.k3s.io | sudo K3S_TOKEN=${token} sh -s - agent --server https://${master_private}:6443 --node-external-ip ${host}" &>/dev/null  &
+
+  ssh -q -o "StrictHostKeyChecking=no" $user@$host "echo ${token} > /tmp/token.txt && curl -sfL https://get.k3s.io | sudo sh -s - agent --server https://${master_private}:6443 --token-file /tmp/token.txt --node-external-ip ${host}" &>/dev/null  &
 done
 
 echo "----- Deployment finished... waiting for all the nodes to become k3s ready... -----"
@@ -101,7 +97,7 @@ then
   do
     echo "----- Waiting... -----"
     nodes_check=`kubectl get nodes | grep Ready | wc -l | tr -d ' '`
-    sleep 3
+    sleep 6
   done
 else
   nodes_check=`ssh -q -o "StrictHostKeyChecking=no" $user@$master_public "sudo kubectl get nodes | grep Ready | wc -l"`
@@ -109,7 +105,7 @@ else
   do
     echo "----- Waiting... -----"
     nodes_check=`ssh -q -o "StrictHostKeyChecking=no" $user@$master_public "sudo kubectl get nodes | grep Ready | wc -l"`
-    sleep 3
+    sleep 6
   done
   ssh -q -o "StrictHostKeyChecking=no" $user@$master_public "sudo kubectl get nodes"
 fi
