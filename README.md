@@ -2,7 +2,7 @@
 
 # 60sk3s
 
-Kubernetes in 60 seconds deployer. Simple bash script which spins up VMs in GCP/DigitalOcean, installs [k3s](https://k3s.io/) on them and downloads kubeconfig.
+K3S Cluster Deployer. Simple bash script which spins up VMs in GCP/DigitalOcean, installs [k3s](https://k3s.io/) on them and downloads kubeconfig.
 
 
 # Getting Started
