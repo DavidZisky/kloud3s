@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-START_TIME=`date "+%s"`
+START_TIME=$(date "+%s")
 
 source components/init.sh
 
@@ -33,8 +33,8 @@ curl -s -X POST \
   --data @components/droplets_workers.json > logs/k3s_workers.json
 
 get_master_ip () {
-  master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
-  master_ip_priv=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
+  master_ip=$(curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address')
+  master_ip_priv=$(curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address')
 }
 
 sleep 15
@@ -46,51 +46,51 @@ do
 done
 
 
-master_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
-master_ip_priv=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
+master_ip=$(curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address')
+master_ip_priv=$(curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-master" | jq -c '.droplets[].networks.v4[] | select( .type == "private" )' | jq -r '.ip_address')
 echo "3. Master node IP assigned: $master_ip"
 
 sleep 10
-until ssh -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" root@$master_ip 'hostname' > /dev/null
+until ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -o "ConnectTimeout=3" root@"$master_ip" 'hostname' > /dev/null
 do
   echo "4. Waiting for the master node to be up and running..."
   sleep 5
 done
 
 # Uncomment below if you want to use CentOS based Droplets
-#ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LANG=en_US.utf-8" > /etc/environment' > /dev/null 2>&1
-#ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' > /dev/null 2>&1
+#ssh -i $privkeypath -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LANG=en_US.utf-8" > /etc/environment' > /dev/null 2>&1
+#ssh -i $privkeypath -q -o "StrictHostKeyChecking=no" -t root@$master_ip 'echo "LC_ALL=en_US.utf-8" >> /etc/environment' > /dev/null 2>&1
 
-echo "5. Install k3s on Master node"
-master_id=`cat logs/k3s_master.json | jq -c '.droplets[].id'`
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
+echo "4. Install k3s on Master node"
+master_id=$(cat logs/k3s_master.json | jq -c '.droplets[].id')
+ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -t root@"$master_ip" "curl -sfL https://get.k3s.io | sh -s - server --disable-cloud-controller --no-deploy servicelb --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$master_id\"" > /dev/null
 
 echo "5. Install DO CCM"
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token" > /dev/null
-ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} "kubectl apply -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/$ccm_version.yml" > /dev/null
+ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -t root@"$master_ip" "kubectl -n kube-system create secret generic digitalocean --from-literal=access-token=$do_api_token" > /dev/null
+ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -t root@"$master_ip" "kubectl apply -f https://raw.githubusercontent.com/digitalocean/digitalocean-cloud-controller-manager/master/releases/$ccm_version.yml" > /dev/null
 
 echo "6. Get token for joining nodes"
-token=`ssh -q -o "StrictHostKeyChecking=no" -t root@${master_ip} 'cat /var/lib/rancher/k3s/server/node-token'`
-echo $token > token.txt
+token=$(ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -t root@"$master_ip" 'cat /var/lib/rancher/k3s/server/node-token')
+echo "$token" > token.txt
 
 echo "7. Get Worker Nodes IP Addresses"
-workers_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-workers" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address'`
-echo $workers_ip
+workers_ip=$(curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets?tag_name=k3s-workers" | jq -c '.droplets[].networks.v4[] | select( .type == "public" )' | jq -r '.ip_address')
+echo "$workers_ip"
 
 echo "8. Install k3s on workers and join the cluster"
 for worker in $workers_ip
 do
   echo "8a. Deploying worker: $worker"
-  worker_id=`ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -s http://169.254.169.254/metadata/v1/id"`
+  worker_id=$(ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" root@"$worker" "curl -s http://169.254.169.254/metadata/v1/id")
   worker_private_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets/${worker_id}" | jq -c '.droplet.networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
-  ssh -q -o "StrictHostKeyChecking=no" root@$worker "echo $token > /tmp/token.txt && curl -sfL https://get.k3s.io | sh -s - agent --token-file /tmp/token.txt --server https://${master_ip_priv}:6443 --node-ip ${worker_private_ip} --node-external-ip ${worker} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null
+  ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" root@$worker "echo $token > /tmp/token.txt && curl -sfL https://get.k3s.io | sh -s - agent --token-file /tmp/token.txt --server https://${master_ip_priv}:6443 --node-ip ${worker_private_ip} --node-external-ip ${worker} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null
 done
 
 echo "9. Downloading kubectl config..."
-ssh -q -o "StrictHostKeyChecking=no" -t root@$master_ip "sudo cp /etc/rancher/k3s/k3s.yaml /root" > /dev/null
+ssh -i "$privkeypath" -q -o "StrictHostKeyChecking=no" -t root@"$master_ip" "sudo cp /etc/rancher/k3s/k3s.yaml /root" > /dev/null
 scp_command="root@$master_ip:/root/k3s.yaml ./k3s.yaml"
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $scp_command >/dev/null
-sed -i.bak "s/127.0.0.1/$master_ip/g" ./k3s.yaml
+scp -i "$privkeypath" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $scp_command >/dev/null #`$scp_command` fails if double-quoted.
+sed -i.bak "s,127.0.0.1,$master_ip,g" ./k3s.yaml
 
 if [ "$load_kube_config" = "true" ]
 then
@@ -101,8 +101,8 @@ fi
 
 if [ "${ccm_only}" = "true" ]
 then
-  END_TIME=`date "+%s"`
-  echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
+  END_TIME=$(date "+%s")
+  echo "----- After $((END_TIME - START_TIME)) seconds - your cluster is ready :) -----"
   exit 0
 fi
 
@@ -110,12 +110,12 @@ echo "10. Installing ExternalDNS..."
 helm repo add bitnami https://charts.bitnami.com/bitnami > /dev/null
 helm -n kube-system install external-dns \
   --set provider=digitalocean \
-  --set digitalocean.apiToken=$do_api_token \
+  --set digitalocean.apiToken="$do_api_token" \
   --set policy=sync \
 bitnami/external-dns > logs/externaldns_install.log
 
 echo "11. Installing Cert-Manager..."
-kubectl -n kube-system create secret generic digitalocean-dns --from-literal=access-token=$do_api_token
+kubectl -n kube-system create secret generic digitalocean-dns --from-literal=access-token="$do_api_token"
 helm -n kube-system install cert-manager bitnami/cert-manager --set installCRDs=true > logs/cert-manager_crds_install.log
 
 sleep 5
@@ -129,5 +129,5 @@ until (kubectl -n kube-system apply -f components/dns-issuer.yaml); do
     fi
 done
 
-END_TIME=`date "+%s"`
-echo "----- After $((${END_TIME} - ${START_TIME})) seconds - your cluster is ready :) -----"
+END_TIME=$(date "+%s")
+echo "----- After $((END_TIME - START_TIME)) seconds - your cluster is ready :) -----"
