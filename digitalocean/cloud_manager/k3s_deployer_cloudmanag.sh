@@ -82,8 +82,8 @@ for worker in $workers_ip
 do
   echo "8a. Deploying worker: $worker"
   worker_id=`ssh -q -o "StrictHostKeyChecking=no" root@$worker "curl -s http://169.254.169.254/metadata/v1/id"`
-  worker_public_ip=`ssh -q -o "StrictHostKeyChecking=no" root@$worker 'hostname -I | tr " " "\n" | head -1'`
-  ssh -q -o "StrictHostKeyChecking=no" root@$worker "echo $token > /tmp/token.txt && curl -sfL https://get.k3s.io | sh -s - agent --token-file /tmp/token.txt --server https://${master_ip_priv}:6443 --node-external-ip ${worker_public_ip} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null
+  worker_private_ip=`curl -s -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $do_api_token" "https://api.digitalocean.com/v2/droplets/${worker_id}" | jq -c '.droplet.networks.v4[] | select( .type == "private" )' | jq -r '.ip_address'`
+  ssh -q -o "StrictHostKeyChecking=no" root@$worker "echo $token > /tmp/token.txt && curl -sfL https://get.k3s.io | sh -s - agent --token-file /tmp/token.txt --server https://${master_ip_priv}:6443 --node-ip ${worker_private_ip} --node-external-ip ${worker} --kubelet-arg=\"cloud-provider=external\" --kubelet-arg=\"provider-id=digitalocean://$worker_id\"" > /dev/null
 done
 
 echo "9. Downloading kubectl config..."
