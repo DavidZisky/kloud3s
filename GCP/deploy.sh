@@ -5,7 +5,7 @@ set -e
 START_TIME=$(date "+%s")
 
 # Put same user as in ssh key here
-user=julien.sudan
+user=""
 # If set to true, your existing kubectl config will be OVERWRITTEN, if set to false, script will only download kubectl config for you
 load_kube_config=true
 
@@ -21,7 +21,7 @@ CLUSTER_NAME="${1:-k3s}"
 FW_RULE_NAME="allow-tcp-6443"
 
 #Put your ssh private key path here if not default
-privkeypath="/home/nedsi/.ssh/julien-rsa"
+privkeypath=""
 
 #Default ssh private key path
 if [ -f "/home/$USER/.ssh/id_rsa" ]; then
@@ -42,7 +42,7 @@ echo "----- K3S GO!!! -----"
 
 # If you want to provide ssh key add this line under the gcloud command:
 gcloud compute --project="$PROJECT" instances create "$CLUSTER_NAME"-master \
-  --metadata=ssh-keys="julien.sudan:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDEauZPOCeD7ygrp1Z/tML12Q0gwlYg7WC2EIqJAgT9AD1t4cXCZ+4yMPpdZBbuRvCCaBXNz69VhSxqKXahtmOvlRkLRoZ03U5Xt60Le+oEI/FZFTKCRoAlMhEhlm+lVoeo736YusNe3N9bIqnK5KiKDCxBV1d4hiMlEHeeh1DA1thl/UYew7zNHn7Sibv06WZC7LmkYvtX2knCr3WJbufHCzwm9GaUYqEoZJJ7wxOjAIti2gHLXRgNQCqWoxa7E5XKJ9cqgTGMonGP4+Nw2NBzOwI2MeVwC1foTx1m89EBIUiClNc7KRYiKGCgBV1fGe+NSxVbIgHAfrWFxZro1olfGg+dvPWxPasT/wkGGvi7MbyFGjA1yKgQgWwnXOhs5BWle8Lm5kTs202T7YpCZ+QNE6mltuLCRF+/hk2hG6QErKBAz+KGD2btCn2rM725lX3/I4/NAQIslPlhdQrz+4kFXTjO5gi9jWXsBBtkvxR5WObq4bvaDNdBZ/Y4fVkOamM= julien.sudan@container-solutions.com" \
+  --metadata=ssh-keys="" \
   --zone="$ZONE" \
   --machine-type=n1-standard-2 \
   --tags=k3smaster,k3s-"$CLUSTER_NAME" \
